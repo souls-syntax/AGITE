@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { VRMLoaderPlugin } from '@pixiv/three-vrm';
+import { VRMLoaderPlugin,VRMSpringBoneColliderShapeCapsule , VRMSpringBoneColliderShapeSphere } from '@pixiv/three-vrm';
 
 // ... Setup renderer, camera, scene ...
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera( 30, window.innerWidth /
   window.innerHeight, 0.1, 20.0 );
-camera.position.set(0.0,1.4,1.9)
+camera.position.set(0.0,0.65,3.0)
 
 const rederer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
 rederer.setSize( window.innerWidth, window.innerHeight );
@@ -38,6 +38,47 @@ loader.load(
   (gltf) => {
       // retrieve a VRM instance from gltf
     const vrm = gltf.userData.vrm;
+    
+    vrm.scene.position.set(0,0,0);
+    // vrm.scene.rotation.y = Math.PI;
+    const scale = .75;
+    vrm.scene.scale.setScalar( scale );
+    
+    // scale joints
+    for ( const joint of vrm.springBoneManager.joints ) {
+      joint.settings.stiffness *= scale;
+      joint.settings.hitRadius *= scale;
+    }
+
+    //scale colliders
+    for ( const collider of vrm.springBoneManager.colliders ) {
+      const shape = collider.shape;
+      if ( shape instanceof VRMSpringBoneColliderShapeCapsule ) {
+        shape.radius *= scale;
+        shape.tail.multiplyScalar ( scale );
+      } else if ( shape instanceof VRMSpringBoneColliderShapeSphere) {
+        shape.radius *= scale;
+      }
+    }
+
+
+    const head = vrm.humanoid.getNormalizedBoneNode('head');
+    const leftArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+    const rightArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+    const leftElbow = vrm.humanoid.getNormalizedBoneNode('leftLowerArm');
+    const rightElbow = vrm.humanoid.getNormalizedBoneNode('rightLowerArm');
+    
+    head.rotation.z = 0.5;
+    leftArm.rotation.z = 1.2;
+    rightArm.rotation.z = -1.2;
+    leftElbow.rotation.z = 0.7;
+    rightElbow.rotation.z = -0.2;
+    
+    vrm.expressionManager.setValue('happy', 1);
+    vrm.expressionManager.setValue('blink', 0);
+
+
+
 
       // add the loaded vrm to the scene
     scene.add(vrm.scene);
